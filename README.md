@@ -203,7 +203,7 @@ Technically excel xlsx files are zipped XML files. There an empty row could be r
 1. The row is not present in the XML at all (no `<row>` element for that row exists).
 2. The row is present in the XML, but all cells in this row are empty (`<row>` element exists for that row, but the `<c>` element does not contain a `<value>` element).
 
-In the Excel UI both rows look the same.
+In the Execel UI both rows look the same.
 
 Prior PR #966 handled such cases differently:
 * If the row was not present in the XML, it was skipped.
