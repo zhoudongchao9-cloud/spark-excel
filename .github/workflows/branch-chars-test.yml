@@ -1,0 +1,47 @@
+name: branch-chars-test
+on: [workflow_dispatch]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test URL-reserved chars in branch names
+        run: |
+          echo "=== Which URL-reserved chars can git branch names contain? ==="
+          # URL 保留字符：# ? & % \ + space
+          for char_desc in \
+            "hash:#" \
+            "question:?" \
+            "amp:&" \
+            "percent:%" \
+            "backslash:\\" \
+            "plus:+" \
+            "space: " \
+            "at:@" \
+            "equal:="; do
+            name=$(echo "$char_desc" | cut -d: -f1)
+            char=$(echo "$char_desc" | cut -d: -f2)
+            branch="test${char}branch"
+            if git branch "$branch" 2>/dev/null; then
+              echo "  ✓ git allows: $name ($char) → branch='$branch'"
+              git branch -D "$branch"
+            else
+              echo "  ✗ git rejects: $name ($char)"
+            fi
+          done
+          echo ""
+          echo "=== URL encoding behavior ==="
+          # 用 Python 测试 URL 编码对这些字符的处理
+          python3 -c "
+          from urllib.parse import quote, urlparse
+          chars = {'#': 'fragment', '?': 'query', '&': 'param_sep', '%': 'encoding',
+                   '\\': 'path_sep', '+': 'space_alt', ' ': 'space', '@': 'userinfo', '=': 'key_val'}
+          for c, desc in chars.items():
+              branch = 'test' + c + 'branch'
+              url = 'https://api.github.com/repos/x/y/contents/?ref=' + branch
+              parsed = urlparse(url)
+              quoted = quote(branch, safe='')
+              print(f'  {desc:12s} char={c!r:6s} raw_url_fragment={parsed.fragment!r:15s} quoted={quoted}')
+          "

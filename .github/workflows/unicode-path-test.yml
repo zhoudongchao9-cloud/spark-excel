@@ -1,0 +1,30 @@
+name: unicode-path-test
+on: [workflow_dispatch]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Unicode path files
+        run: |
+          printf '\xc2\xad' > /tmp/sh
+          printf '\xe2\x80\x8b' > /tmp/zwsp
+          mkdir -p "src$(cat /tmp/sh)" "src$(cat /tmp/zwsp)" src
+          echo "# sh" > "src$(cat /tmp/sh)/hidden.py"
+          echo "# zwsp" > "src$(cat /tmp/zwsp)/hidden.py"
+          echo "# normal" > src/normal.py
+          find src* -type f -exec bash -c 'echo "  {}" | cat -A' \;
+      - name: Commit and PR
+        run: |
+          git config user.name "test-bot"
+          git config user.email "test@test.com"
+          git checkout -b probe/unicode-paths
+          git add -A
+          git commit -m "unicode paths"
+          git push origin probe/unicode-paths
+          gh pr create --title "Unicode path filter test" --body "src<SH>/ src<ZWSP>/ src/" --base main --head probe/unicode-paths || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
